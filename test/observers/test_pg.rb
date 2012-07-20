@@ -114,6 +114,17 @@ module Tusk
 
         assert q.empty?
       end
+
+      def test_no_connection
+        obj = Class.new {
+          include Tusk::Observers::PG
+        }.new
+
+        assert_raises(NotImplementedError) do
+          obj.changed
+          obj.notify_observers
+        end
+      end
     end
   end
 end

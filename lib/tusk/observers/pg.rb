@@ -69,6 +69,10 @@ module Tusk
 
       private
 
+      def connection
+        raise NotImplementedError, "you must implement the `connection` method for the PG obsever"
+      end
+
       def channel
         "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
       end
