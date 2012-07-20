@@ -1,14 +1,14 @@
 require 'pg'
-require 'tusk/observables/pg'
+require 'tusk/observable/pg'
 require 'helper'
 
 module Tusk
-  module Observables
+  module Observable
     class TestPg < TestCase
       include ObserverTests
 
       class Timer
-        include Tusk::Observables::PG
+        include Tusk::Observable::PG
 
         def tick
           changed
@@ -27,7 +27,7 @@ module Tusk
       end
 
       def observer_module
-        Tusk::Observables::PG
+        Tusk::Observable::PG
       end
     end
 
@@ -36,7 +36,7 @@ module Tusk
 
       def build_observable
         Class.new {
-          extend Tusk::Observables::PG
+          extend Tusk::Observable::PG
 
           def self.tick
             changed
@@ -50,7 +50,7 @@ module Tusk
       end
 
       def observer_module
-        Tusk::Observables::PG
+        Tusk::Observable::PG
       end
     end
   end

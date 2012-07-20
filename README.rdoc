@@ -18,7 +18,31 @@ Currently, Tusk supports Redis and PostgreSQL as message bus back ends.
 
 == SYNOPSIS:
 
-  FIX (code sample of usage)
+Here is an in-memory observer example:
+
+    require 'observer'
+    
+    class Timer
+      include Observable
+    
+      def tick
+        changed
+        notify_observers
+      end
+    end
+    
+    class Listener
+      def update; puts "got update"; end
+    end
+    
+    timer = Timer.new
+    timer.add_observer Listener.new
+    loop { timer.tick; sleep 1; }
+
+
+The down side of this example is that the Listener cannot be in a different
+process.  We can move the Listener to a different process by using the Redis
+observable mixin and providing a redis connection:
 
 == REQUIREMENTS:
 

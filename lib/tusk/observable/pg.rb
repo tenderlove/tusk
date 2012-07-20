@@ -1,23 +1,23 @@
-require 'securerandom'
 require 'thread'
+require 'digest/md5'
 require 'tusk/latch'
 
 module Tusk
-  module Observables
+  module Observable
     ###
-    # An observer implementation for Redis.  This module requires that
-    # your class implement a `connection` method that returns a redis
+    # An observer implementation for PostgreSQL.  This module requires that
+    # your class implement a `connection` method that returns a database
     # connection that this module can use.
     #
     # This observer works across processes.
     #
     # Example:
     #
-    #     require 'redis'
-    #     require 'tusk/observables/redis'
+    #     require 'pg'
+    #     require 'tusk/observable/pg'
     #     
     #     class Timer
-    #       include Tusk::Observers::Redis
+    #       include Tusk::Observable::PG
     #     
     #       def tick
     #         changed
@@ -25,7 +25,7 @@ module Tusk
     #       end
     #     
     #       def connection
-    #         Thread.current[:conn] ||= ::Redis.new
+    #         Thread.current[:conn] ||= ::PG::Connection.new :dbname => 'postgres'
     #       end
     #     end
     #     
@@ -46,29 +46,29 @@ module Tusk
     #       timer.tick
     #       sleep 1
     #     end
-    module Redis
+    module PG
       def self.extended klass
         super
 
         klass.instance_eval do
-          @sub_lock        = Mutex.new
-          @observer_state  = false
-          @subscribers     = {}
-          @_listener       = nil
-          @control_channel = SecureRandom.hex
+          @sub_lock       = Mutex.new
+          @observer_state = false
+          @subscribers    = {}
+          @_listener      = nil
+          @observing      = Latch.new
         end
       end
 
-      attr_reader :subscribers, :control_channel
+      attr_reader :subscribers
 
       def initialize *args
         super
 
-        @sub_lock        = Mutex.new
-        @observer_state  = false
-        @subscribers     = {}
-        @_listener       = nil
-        @control_channel = SecureRandom.hex
+        @sub_lock       = Mutex.new
+        @observer_state = false
+        @subscribers    = {}
+        @_listener      = nil
+        @observing      = Latch.new
       end
 
       # Returns the number of observers associated with this object *in the
@@ -83,7 +83,6 @@ module Tusk
       # other processes.
       def delete_observers
         @sub_lock.synchronize { subscribers.delete channel }
-        connection.publish control_channel, 'quit'
       end
 
       # Returns true if this object's state has been changed since the last
@@ -102,7 +101,7 @@ module Tusk
       # observing objects.
       def notify_observers
         return unless changed?
-        connection.publish channel, nil
+        connection.exec "NOTIFY #{channel}"
         changed false
       end
 
@@ -112,58 +111,47 @@ module Tusk
       #
       # +func+ method is called on +object+ when notifications are sent.
       def add_observer object, func = :update
-        observer_set = Latch.new
-        observing    = Latch.new
-
         @sub_lock.synchronize do
-          observing.release if subscribers.key? channel
-
           subscribers.fetch(channel) { |k|
             Thread.new {
-              observer_set.await
-              start_listener(observing)
+              start_listener
+              connection.exec "LISTEN #{channel}"
+              observing.release
             }
             subscribers[k] = {}
           }[object] = func
         end
 
-        observer_set.release
-        observing.await
+        @observing.await
       end
 
       # Remove +observer+ so that it will no longer receive notifications.
       def delete_observer o
         @sub_lock.synchronize do
           subscribers.fetch(channel, {}).delete o
-          if subscribers.fetch(channel,{}).empty?
-            subscribers.delete channel
-            connection.publish control_channel, 'quit'
-          end
         end
       end
 
       private
 
       def connection
-        raise NotImplementedError, "you must implement the `connection` method for the redis obsever"
+        raise NotImplementedError, "you must implement the `connection` method for the PG obsever"
       end
 
       def channel
         "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
       end
 
-      def start_listener latch
-        connection.subscribe(channel, control_channel) do |on|
-          on.subscribe { |c| latch.release }
+      def start_listener
+        return if @_listener
 
-          on.message do |c, message|
-            if c == control_channel && message == 'quit'
-              connection.unsubscribe
-            else
-              @sub_lock.synchronize do
-                subscribers.fetch(c, {}).each do |object,m|
-                  object.send m
-                end
+        @_listener = Thread.new(connection) do |conn|
+          @observing.release
+
+          loop do
+            conn.wait_for_notify do |event, pid|
+              subscribers.fetch(event, []).dup.each do |listener, func|
+                listener.send func
               end
             end
           end
