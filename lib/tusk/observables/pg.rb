@@ -3,7 +3,7 @@ require 'digest/md5'
 require 'tusk/latch'
 
 module Tusk
-  module Observers
+  module Observables
     ###
     # An observer implementation for PostgreSQL.  This module requires that
     # your class implement a `connection` method that returns a database
@@ -14,10 +14,10 @@ module Tusk
     # Example:
     #
     #     require 'pg'
-    #     require 'tusk/observers/pg'
+    #     require 'tusk/observables/pg'
     #     
     #     class Timer
-    #       include Tusk::Observers::PG
+    #       include Tusk::Observables::PG
     #     
     #       def tick
     #         changed
@@ -71,28 +71,45 @@ module Tusk
         @observing      = Latch.new
       end
 
+      # Returns the number of observers associated with this object *in the
+      # current process*.  If the object is observed across multiple processes,
+      # the returned count will not reflect the other processes.
       def count_observers
         @sub_lock.synchronize { subscribers.fetch(channel, {}).length }
       end
 
+      # Remove all observers associated with this object *in the current
+      # process*. This method will not impact observers of this object in
+      # other processes.
       def delete_observers
         @sub_lock.synchronize { subscribers.delete channel }
       end
 
+      # Returns true if this object's state has been changed since the last
+      # call to #notify_observers.
       def changed?
         @observer_state
       end
 
+      # Set the changed state of this object.  Notifications will be sent only
+      # if the changed +state+ is a truthy object.
       def changed state = true
         @observer_state = state
       end
 
+      # If this object's #changed? state is true, this method will notify
+      # observing objects.
       def notify_observers
-        return unless @observer_state
+        return unless changed?
         connection.exec "NOTIFY #{channel}"
-        @observer_state = false
+        changed false
       end
 
+      # Add +observer+ as an observer to this object.  The +object+ will
+      # receive a notification when #changed? returns true and #notify_observers
+      # is called.
+      #
+      # +func+ method is called on +object+ when notifications are sent.
       def add_observer object, func = :update
         @sub_lock.synchronize do
           subscribers.fetch(channel) { |k|
@@ -108,6 +125,7 @@ module Tusk
         @observing.await
       end
 
+      # Remove +observer+ so that it will no longer receive notifications.
       def delete_observer o
         @sub_lock.synchronize do
           subscribers.fetch(channel, {}).delete o

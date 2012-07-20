@@ -1,14 +1,14 @@
 require 'redis'
-require 'tusk/observers/redis'
+require 'tusk/observables/redis'
 require 'helper'
 
 module Tusk
-  module Observers
+  module Observables
     class TestRedis < TestCase
       include ObserverTests
 
       class Timer
-        include Tusk::Observers::Redis
+        include Tusk::Observables::Redis
 
         def tick
           changed
@@ -37,7 +37,7 @@ module Tusk
       end
 
       def observer_module
-        Tusk::Observers::Redis
+        Tusk::Observables::Redis
       end
     end
 
@@ -46,7 +46,7 @@ module Tusk
 
       def build_observable
         Class.new {
-          extend Tusk::Observers::Redis
+          extend Tusk::Observables::Redis
 
           def self.tick
             changed
@@ -60,7 +60,7 @@ module Tusk
       end
 
       def observer_module
-        Tusk::Observers::Redis
+        Tusk::Observables::Redis
       end
     end
   end

@@ -1,14 +1,20 @@
 = tusk
 
-* FIX (url)
+* http://github.com/tenderlove/tusk
 
 == DESCRIPTION:
 
-FIX (describe your package)
+Tusk is a minimal pub / sub system with multiple observer strategies.
+Tusk builds upon the Observer API from stdlib in order to provide a mostly
+consistent API for building cross thread or process pub / sub systems.
+
+Currently, Tusk supports Redis and PostgreSQL as message bus back ends.
 
 == FEATURES/PROBLEMS:
 
-* FIX (list of features or problems)
+* Send message across processes
+* Supports Redis as a message bus
+* Supports PostgreSQL as a message bus
 
 == SYNOPSIS:
 
