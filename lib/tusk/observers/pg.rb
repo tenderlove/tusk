@@ -1,10 +1,51 @@
-require 'pg'
 require 'thread'
 require 'digest/md5'
 require 'tusk/latch'
 
 module Tusk
   module Observers
+    ###
+    # An observer implementation for PostgreSQL.  This module requires that
+    # your class implement a `connection` method that returns a database
+    # connection that this module can use.
+    #
+    # This observer works across processes.
+    #
+    # Example:
+    #
+    #     require 'pg'
+    #     require 'tusk/observers/pg'
+    #     
+    #     class Timer
+    #       include Tusk::Observers::PG
+    #     
+    #       def tick
+    #         changed
+    #         notify_observers
+    #       end
+    #     
+    #       def connection
+    #         Thread.current[:conn] ||= ::PG::Connection.new :dbname => 'postgres'
+    #       end
+    #     end
+    #     
+    #     class Listener
+    #       def update
+    #         puts "got update"
+    #       end
+    #     end
+    #     
+    #     timer = Timer.new
+    #     
+    #     fork do
+    #       timer.add_observer Listener.new
+    #       sleep # put the process to sleep so it doesn't exit
+    #     end
+    #     
+    #     loop do
+    #       timer.tick
+    #       sleep 1
+    #     end
     module PG
       def self.extended klass
         super

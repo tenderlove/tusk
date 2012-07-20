@@ -1,3 +1,4 @@
+require 'pg'
 require 'tusk/observers/pg'
 require 'helper'
 
