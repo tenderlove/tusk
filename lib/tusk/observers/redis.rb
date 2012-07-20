@@ -1,15 +1,19 @@
+require 'securerandom'
+require 'thread'
+
 module Tusk
   module Observers
     module Redis
-      attr_reader :subscribers
+      attr_reader :subscribers, :control_channel
 
       def initialize *args
         super
 
-        @sub_lock       = Mutex.new
-        @observer_state = false
-        @subscribers    = {}
-        @_listener      = nil
+        @sub_lock        = Mutex.new
+        @observer_state  = false
+        @subscribers     = {}
+        @_listener       = nil
+        @control_channel = SecureRandom.hex
       end
 
       def count_observers
@@ -38,22 +42,30 @@ module Tusk
         observer_set = Latch.new
         observing    = Latch.new
 
-        observing.release if subscribers.key? channel
+        @sub_lock.synchronize do
+          observing.release if subscribers.key? channel
 
-        subscribers.fetch(channel) { |k|
-          Thread.new {
-            observer_set.await
-            start_listener(observing)
-          }
-          subscribers[k] = {}
-        }[object] = func
+          subscribers.fetch(channel) { |k|
+            Thread.new {
+              observer_set.await
+              start_listener(observing)
+            }
+            subscribers[k] = {}
+          }[object] = func
+        end
 
         observer_set.release
         observing.await
       end
 
       def delete_observer o
-        subscribers.fetch(channel, {}).delete o
+        @sub_lock.synchronize do
+          subscribers.fetch(channel, {}).delete o
+          if subscribers.fetch(channel,{}).empty?
+            subscribers.delete channel
+            connection.publish control_channel, 'quit'
+          end
+        end
       end
 
       private
@@ -67,12 +79,18 @@ module Tusk
       end
 
       def start_listener latch
-        connection.subscribe(channel) do |on|
+        connection.subscribe(channel, control_channel) do |on|
           on.subscribe { |c| latch.release }
 
           on.message do |c, message|
-            subscribers.fetch(c, {}).each do |object,m|
-              object.send m
+            if c == control_channel && message == 'quit'
+              connection.unsubscribe
+            else
+              @sub_lock.synchronize do
+                subscribers.fetch(c, {}).each do |object,m|
+                  object.send m
+                end
+              end
             end
           end
         end
