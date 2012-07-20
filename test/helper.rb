@@ -59,6 +59,20 @@ module Tusk
         assert_equal :foo, q.pop
       end
 
+      def test_multiple_observers
+        o = build_observable
+        q = Queue.new
+
+        o.add_observer QueueingObserver.new q
+        o.add_observer QueueingObserver.new q
+
+        o.changed
+        o.notify_observers
+
+        assert_equal :foo, q.pop
+        assert_equal :foo, q.pop
+      end
+
       def test_observer_only_fires_on_change
         o = build_observable
         q = Queue.new
