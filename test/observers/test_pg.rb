@@ -64,6 +64,18 @@ module Tusk
 
         assert_equal :foo, q.pop
       end
+
+      def test_observer_only_fires_on_change
+        o = InstanceObserver.new
+        q = Queue.new
+
+        o.add_observer(Class.new {
+          define_method(:update) { q.push :foo }
+        }.new)
+
+        o.notify_observers
+        assert q.empty?
+      end
     end
   end
 end
