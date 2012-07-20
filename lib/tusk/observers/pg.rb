@@ -52,10 +52,6 @@ module Tusk
         @observer_state = false
       end
 
-      def channel
-        "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
-      end
-
       def add_observer object, func = :update
         subscribers.fetch(channel) { |k|
           Thread.new {
@@ -72,6 +68,10 @@ module Tusk
       end
 
       private
+
+      def channel
+        "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
+      end
 
       def start_listener
         return if @_listener
