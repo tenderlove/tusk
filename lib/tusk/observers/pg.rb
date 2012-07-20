@@ -94,18 +94,24 @@ module Tusk
       end
 
       def add_observer object, func = :update
-        subscribers.fetch(channel) { |k|
-          Thread.new {
-            start_listener
-            connection.exec "LISTEN #{channel}"
-          }
-          subscribers[k] = {}
-        }[object] = func
+        @sub_lock.synchronize do
+          subscribers.fetch(channel) { |k|
+            Thread.new {
+              start_listener
+              connection.exec "LISTEN #{channel}"
+              observing.release
+            }
+            subscribers[k] = {}
+          }[object] = func
+        end
+
         @observing.await
       end
 
       def delete_observer o
-        subscribers.fetch(channel, {}).delete o
+        @sub_lock.synchronize do
+          subscribers.fetch(channel, {}).delete o
+        end
       end
 
       private
