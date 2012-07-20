@@ -29,22 +29,32 @@ module Tusk
         assert o.changed
       end
 
-      # Doesn't make sense in a multi-proc environment, so raise an error
-      def test_count_observers
-        o = build_observable
-
-        assert_raises(NotImplementedError) do
-          o.count_observers
-        end
-      end
-
-      # Doesn't make sense in a multi-proc environment, so raise an error
       def test_delete_observers
         o = build_observable
 
-        assert_raises(NotImplementedError) do
-          o.delete_observers
-        end
+        q = Queue.new
+
+        o.add_observer QueueingObserver.new q
+        o.delete_observers
+        o.changed
+        o.notify_observers
+        assert q.empty?
+      end
+
+      def test_count_observers
+        o = build_observable
+        assert_equal 0, o.count_observers
+
+        q = Queue.new
+
+        o.add_observer QueueingObserver.new q
+        assert_equal 1, o.count_observers
+
+        o.add_observer QueueingObserver.new q
+        assert_equal 2, o.count_observers
+
+        o.delete_observers
+        assert_equal 0, o.count_observers
       end
 
       def test_observer_fires

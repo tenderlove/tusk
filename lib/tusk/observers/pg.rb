@@ -72,11 +72,11 @@ module Tusk
       end
 
       def count_observers
-        raise NotImplementedError
+        @sub_lock.synchronize { subscribers.fetch(channel, {}).length }
       end
 
       def delete_observers
-        raise NotImplementedError
+        @sub_lock.synchronize { subscribers.delete channel }
       end
 
       def changed?
