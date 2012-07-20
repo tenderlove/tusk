@@ -4,6 +4,18 @@ require 'thread'
 module Tusk
   module Observers
     module Redis
+      def self.extended klass
+        super
+
+        klass.instance_eval do
+          @sub_lock        = Mutex.new
+          @observer_state  = false
+          @subscribers     = {}
+          @_listener       = nil
+          @control_channel = SecureRandom.hex
+        end
+      end
+
       attr_reader :subscribers, :control_channel
 
       def initialize *args

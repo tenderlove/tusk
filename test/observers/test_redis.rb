@@ -40,5 +40,28 @@ module Tusk
         Tusk::Observers::Redis
       end
     end
+
+    class TestClassRedis < TestCase
+      include ObserverTests
+
+      def build_observable
+        Class.new {
+          extend Tusk::Observers::Redis
+
+          def self.tick
+            changed
+            notify_observers
+          end
+
+          def self.connection
+            Thread.current[:redis] ||= ::Redis.new
+          end
+        }
+      end
+
+      def observer_module
+        Tusk::Observers::Redis
+      end
+    end
   end
 end

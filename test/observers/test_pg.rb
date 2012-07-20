@@ -30,5 +30,28 @@ module Tusk
         Tusk::Observers::PG
       end
     end
+
+    class TestClassPg < TestCase
+      include ObserverTests
+
+      def build_observable
+        Class.new {
+          extend Tusk::Observers::PG
+
+          def self.tick
+            changed
+            notify_observers
+          end
+
+          def self.connection
+            Thread.current[:conn] ||= ::PG::Connection.new :dbname => 'postgres'
+          end
+        }
+      end
+
+      def observer_module
+        Tusk::Observers::PG
+      end
+    end
   end
 end
