@@ -67,6 +67,10 @@ module Tusk
         @observing.await
       end
 
+      def delete_observer o
+        subscribers.fetch(channel, {}).delete o
+      end
+
       private
 
       def start_listener
