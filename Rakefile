@@ -14,7 +14,7 @@ Hoe.spec 'tusk' do
   self.history_file  = 'CHANGELOG.rdoc'
   self.extra_rdoc_files  = FileList['*.rdoc']
 
-  self.extra_deps << ['pg', '~> 0.14.0']
+  self.extra_dev_deps << ['pg', '~> 0.14.0']
 end
 
 # vim: syntax=ruby
