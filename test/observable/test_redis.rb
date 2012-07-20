@@ -65,3 +65,20 @@ module Tusk
     end
   end
 end
+
+Dir.chdir(File.join(File.dirname(__FILE__), '..')) do
+  `redis-server redis-test.conf`
+end
+
+at_exit {
+  next if $!
+
+  exit_code = MiniTest::Unit.new.run(ARGV)
+
+  processes = `ps -A -o pid,command | grep [r]edis-test`.split("\n")
+  pids = processes.map { |process| process.split(" ")[0] }
+  puts "Killing test redis server..."
+  pids.each { |pid| Process.kill("KILL", pid.to_i) }
+
+  exit exit_code
+}
