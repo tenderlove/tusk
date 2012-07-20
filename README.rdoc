@@ -104,13 +104,69 @@ PostgreSQL can also be used as the message bus:
     
     loop { timer.tick; sleep 1; }
 
+We can easily integrate Tusk with Active Record.  Here is a User model that
+sends notifications when a user is created:
+
+    require 'tusk/observable/pg'
+    class User < ActiveRecord::Base
+      attr_accessible :name
+    
+      extend Tusk::Observable::PG
+    
+      # After users are created, notify the message bus
+      after_create :notify_observers
+    
+      # Listeners will use the table name as the bus channel
+      def self.channel
+        table_name
+      end
+    
+      private
+    
+      def notify_observers
+        self.class.changed
+        self.class.notify_observers
+      end
+    end
+
+The table name is used as the channel name where objects will listen.  Here is
+a producer script:
+
+    require 'user'
+    loop do
+      User.create!(:name => 'testing')
+      sleep 1
+    end
+
+Our consumer adds an observer to the User class:
+
+    require 'user'
+    class UserListener
+      def initialize
+        super
+        @last_id = 0
+      end
+    
+      def update
+        users = User.where('id > ?', @last_id).sort_by(&:id)
+        @last_id = users.last.id
+        users.each { |u| p "user created: #{u.id}" }
+      end
+    end
+    
+    User.add_observer UserListener.new
+    # Put the main thread to sleep
+    sleep
+
+Whenever a user gets created, our consumer listener will be notified.
+
 == REQUIREMENTS:
 
-* FIX (list of requirements)
+* PostgreSQL or Redis
 
 == INSTALL:
 
-* FIX (sudo gem install, anything else)
+* gem install tusk
 
 == LICENSE:
 
