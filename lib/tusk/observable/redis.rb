@@ -144,10 +144,6 @@ module Tusk
 
       private
 
-      def connection
-        raise NotImplementedError, "you must implement the `connection` method for the redis obsever"
-      end
-
       def channel
         "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
       end

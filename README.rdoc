@@ -44,6 +44,66 @@ The down side of this example is that the Listener cannot be in a different
 process.  We can move the Listener to a different process by using the Redis
 observable mixin and providing a redis connection:
 
+    require 'tusk/observable/redis'
+    require 'redis'
+    
+    class Timer
+      include Tusk::Observable::Redis
+    
+      def tick
+        changed
+        notify_observers
+      end
+    
+      def connection
+        Thread.current[:redis] ||= ::Redis.new
+      end
+    end
+    
+    class Listener
+      def update; puts "got update PID: #{$$}"; end
+    end
+    
+    timer = Timer.new
+    
+    fork {
+      timer.add_observer Listener.new
+      sleep
+    }
+    
+    loop { timer.tick; sleep 1; }
+
+PostgreSQL can also be used as the message bus:
+
+    require 'tusk/observable/pg'
+    require 'pg'
+    
+    class Timer
+      include Tusk::Observable::PG
+    
+      def tick
+        changed
+        notify_observers
+      end
+    
+      def connection
+        Thread.current[:pg] ||= ::PG::Connection.new :dbname => 'postgres'
+      end
+    end
+    
+    class Listener
+      def update; puts "got update PID: #{$$}"; end
+    end
+    
+    timer = Timer.new
+    
+    fork {
+      timer.add_observer Listener.new
+      sleep
+    }
+    
+    loop { timer.tick; sleep 1; }
+
 == REQUIREMENTS:
 
 * FIX (list of requirements)

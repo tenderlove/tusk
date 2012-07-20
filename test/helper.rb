@@ -129,7 +129,7 @@ module Tusk
         mod = observer_module
         obj = Class.new { include mod }.new
 
-        assert_raises(NotImplementedError) do
+        assert_raises(NameError) do
           obj.changed
           obj.notify_observers
         end

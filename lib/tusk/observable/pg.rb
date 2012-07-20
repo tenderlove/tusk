@@ -101,7 +101,9 @@ module Tusk
       # observing objects.
       def notify_observers
         return unless changed?
-        connection.exec "NOTIFY #{channel}"
+
+        unwrap(connection).exec "NOTIFY #{channel}"
+
         changed false
       end
 
@@ -115,8 +117,8 @@ module Tusk
           subscribers.fetch(channel) { |k|
             Thread.new {
               start_listener
-              connection.exec "LISTEN #{channel}"
-              observing.release
+              unwrap(connection).exec "LISTEN #{channel}"
+              @observing.release
             }
             subscribers[k] = {}
           }[object] = func
@@ -134,8 +136,14 @@ module Tusk
 
       private
 
-      def connection
-        raise NotImplementedError, "you must implement the `connection` method for the PG obsever"
+      def unwrap conn
+        if conn.respond_to? :exec
+          conn
+        else
+          # Yes, I am a terrible person.  This pulls
+          # the connection out of AR connections.
+          conn.instance_eval { @connection }
+        end
       end
 
       def channel
@@ -145,7 +153,7 @@ module Tusk
       def start_listener
         return if @_listener
 
-        @_listener = Thread.new(connection) do |conn|
+        @_listener = Thread.new(unwrap(connection)) do |conn|
           @observing.release
 
           loop do
