@@ -1,11 +1,13 @@
 .autotest
 CHANGELOG.rdoc
 Manifest.txt
-README.rdoc
+README.markdown
 Rakefile
 lib/tusk.rb
 lib/tusk/latch.rb
-lib/tusk/observers/pg.rb
-test.rb
+lib/tusk/observable/pg.rb
+lib/tusk/observable/redis.rb
 test/helper.rb
-test/observers/test_pg.rb
+test/observable/test_pg.rb
+test/observable/test_redis.rb
+test/redis-test.conf
