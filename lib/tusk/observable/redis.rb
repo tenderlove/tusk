@@ -100,9 +100,9 @@ module Tusk
 
       # If this object's #changed? state is true, this method will notify
       # observing objects.
-      def notify_observers
+      def notify_observers(*args)
         return unless changed?
-        connection.publish channel, nil
+        connection.publish channel, Marshal.dump(args)
         changed false
       end
 
@@ -148,6 +148,10 @@ module Tusk
         "a" + Digest::MD5.hexdigest("#{self.class.name}#{object_id}")
       end
 
+      def payload_coder
+        Marshal
+      end
+
       def start_listener latch
         connection.subscribe(channel, control_channel) do |on|
           on.subscribe { |c| latch.release }
@@ -158,7 +162,7 @@ module Tusk
             else
               @sub_lock.synchronize do
                 subscribers.fetch(c, {}).each do |object,m|
-                  object.send m
+                  object.send m, *payload_coder.load(message)
                 end
               end
             end
