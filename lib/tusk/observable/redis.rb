@@ -102,7 +102,7 @@ module Tusk
       # observing objects.
       def notify_observers(*args)
         return unless changed?
-        connection.publish channel, Marshal.dump(args)
+        connection.publish channel, payload_coder.dump(args)
         changed false
       end
 
