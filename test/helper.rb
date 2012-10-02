@@ -13,6 +13,12 @@ module Tusk
         end
       end
 
+      class PayloadQueueingObserver < QueueingObserver
+        def update(*args)
+          @q.push(args)
+        end
+      end
+
       def test_changed?
         o = build_observable
         refute o.changed?
@@ -67,6 +73,18 @@ module Tusk
         o.notify_observers
 
         assert_equal :foo, q.pop
+      end
+
+      def test_notification_payload
+        o = build_observable
+        q = Queue.new
+
+        o.add_observer PayloadQueueingObserver.new q
+
+        o.changed
+        o.notify_observers :payload
+
+        assert_equal [:payload], q.pop
       end
 
       def test_multiple_observers
