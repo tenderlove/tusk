@@ -1,3 +1,9 @@
+=== 1.1.0 / Unreleased
+
+* Redis supports sending a payload with `notify_observers`
+
+* DRb observer added
+
 === 1.0.0 / 2012-07-18
 
 * 1 major enhancement

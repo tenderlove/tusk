@@ -15,6 +15,7 @@ Currently, Tusk supports Redis and PostgreSQL as message bus back ends.
 * Send message across processes
 * Supports Redis as a message bus
 * Supports PostgreSQL as a message bus
+* Supports DRb as a message bus
 
 ## SYNOPSIS:
 

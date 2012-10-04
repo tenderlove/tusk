@@ -15,33 +15,33 @@ module Tusk
     #
     #     require 'redis'
     #     require 'tusk/observable/redis'
-    #     
+    #
     #     class Timer
     #       include Tusk::Observable::Redis
-    #     
+    #
     #       def tick
     #         changed
     #         notify_observers
     #       end
-    #     
+    #
     #       def connection
     #         Thread.current[:conn] ||= ::Redis.new
     #       end
     #     end
-    #     
+    #
     #     class Listener
     #       def update
     #         puts "got update"
     #       end
     #     end
-    #     
+    #
     #     timer = Timer.new
-    #     
+    #
     #     fork do
     #       timer.add_observer Listener.new
     #       sleep # put the process to sleep so it doesn't exit
     #     end
-    #     
+    #
     #     loop do
     #       timer.tick
     #       sleep 1
