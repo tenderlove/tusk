@@ -1,4 +1,4 @@
-=== 1.1.0 / Unreleased
+=== 1.1.0 / 2012-10-04
 
 * Redis supports sending a payload with `notify_observers`
   Thanks Collin Miller!
