@@ -1,6 +1,7 @@
 === 1.1.0 / Unreleased
 
 * Redis supports sending a payload with `notify_observers`
+  Thanks Collin Miller!
 
 * DRb observer added
 
