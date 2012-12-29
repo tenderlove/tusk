@@ -13,3 +13,4 @@ test/observable/test_drb.rb
 test/observable/test_pg.rb
 test/observable/test_redis.rb
 test/redis-test.conf
+tusk.gemspec
