@@ -99,10 +99,10 @@ module Tusk
 
       # If this object's #changed? state is true, this method will notify
       # observing objects.
-      def notify_observers
+      def notify_observers(*args)
         return unless changed?
 
-        unwrap(connection).exec "NOTIFY #{channel}"
+        unwrap(connection).exec "NOTIFY #{channel}, #{args}"
 
         changed false
       end
@@ -157,9 +157,9 @@ module Tusk
           @observing.release
 
           loop do
-            conn.wait_for_notify do |event, pid|
+            conn.wait_for_notify do |event, pid, payload|
               subscribers.fetch(event, []).dup.each do |listener, func|
-                listener.send func
+                listener.send func, Marshal.load(payload)
               end
             end
           end
